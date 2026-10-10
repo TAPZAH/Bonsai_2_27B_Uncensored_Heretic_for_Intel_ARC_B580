@@ -36,15 +36,22 @@ rem allow bonsai.bat 65k-q8_0 to start directly (used by the shortcuts)
 if not "%~1"=="" goto :run_named
 
 :menu
+set "S_ENGINE=not installed"
+set "S_MODEL=not installed"
+set "S_VISION=not installed"
+if exist "%EXE%" set "S_ENGINE=INSTALLED"
+if exist "%HERE%%MODEL_FILE%" set "S_MODEL=INSTALLED"
+if exist "%HERE%%MMPROJ_FILE%" set "S_VISION=INSTALLED"
+
 cls
 echo ============================================================
 echo   Ternary Bonsai 2 27B PQ2_0
 echo ============================================================
 echo.
 echo   DOWNLOAD
-echo      1   engine   (PrismML llama.cpp fork, required)
-echo      2   model    (7.2 GB)
-echo      3   vision   (0.93 GB, optional - only for image input)
+echo      1   engine     [%S_ENGINE%]    PrismML llama.cpp fork, required
+echo      2   model      [%S_MODEL%]    7.2 GB
+echo      3   vision     [%S_VISION%]   0.93 GB, only for image input
 echo.
 echo   RUN   tested configurations
 echo      4   32k  f16     best quality
@@ -54,9 +61,13 @@ echo      7   65k  q8_0    recommended
 echo      8   131k q8_0
 echo      9   262k q4_0    max context, lower KV quality
 echo.
-echo   SERVER
-echo      S   settings  (port, threads, slots, custom context)
-echo      T   test      (send a request to a running server)
+echo   SERVER   active values
+echo      port     = %PORT%
+echo      threads  = %THREADS%
+echo      slots    = %PARALLEL%
+echo.
+echo      S   change settings
+echo      T   test a running server
 echo      Q   quit
 echo.
 set "CH="
@@ -179,14 +190,17 @@ rem =====================================================================
 :settings
 cls
 echo ============================================================
-echo   Settings
+echo   Server settings
 echo ============================================================
 echo.
-echo   1  port      = %PORT%
-echo   2  threads   = %THREADS%
-echo   3  slots     = %PARALLEL%
-echo   4  run a custom context (you choose size and KV type)
-echo   B  back
+echo   Active values used when the server starts:
+echo.
+echo      1   port       = %PORT%
+echo      2   threads    = %THREADS%
+echo      3   slots      = %PARALLEL%
+echo.
+echo   4  run a custom context (choose size and KV type)
+echo   B  back to menu
 echo.
 set "CH="
 set /p CH="Select: "

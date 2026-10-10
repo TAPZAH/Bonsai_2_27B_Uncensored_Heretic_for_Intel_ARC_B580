@@ -1,3 +1,5 @@
+**English** | **[Русский](README.ru.md)**
+
 # Ternary Bonsai 2 27B (PQ2_0) — portable launcher
 
 Runs [`OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF`](https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF) — a 27B ternary reasoning model in 7.2 GB — through an OpenAI-compatible server, with tested context presets from 32k up to 262k tokens.
