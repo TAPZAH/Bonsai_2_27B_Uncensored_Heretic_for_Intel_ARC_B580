@@ -1,0 +1,10 @@
+# model files, not in git
+*.gguf
+# engine binaries, not in git
+prism-llama/
+# logs
+*.log
+*.err
+*.out
+# windows shortcuts (binary, machine-specific)
+*.lnk
