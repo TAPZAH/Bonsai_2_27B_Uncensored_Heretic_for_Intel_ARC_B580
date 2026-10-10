@@ -1,10 +1,16 @@
-# model files, not in git
+# downloaded by bonsai.bat - never commit
 *.gguf
-# engine binaries, not in git
+*.zip
+
+# engine binaries, fetched at runtime
+engine/
 prism-llama/
-# logs
+
+# windows shortcuts are machine specific
+*.lnk
+
+# local scratch
 *.log
 *.err
 *.out
-# windows shortcuts (binary, machine-specific)
-*.lnk
+_archive/
