@@ -2,6 +2,23 @@
 
 # Ternary Bonsai 2 27B (PQ2_0) — portable launcher
 
+> **Intel Arc B580 only.**
+>
+> Every preset, every flag and every number below was measured on an
+> **Intel Arc B580 (12 GB VRAM)** with the **Vulkan** build of the PrismML
+> llama.cpp fork on Windows.
+>
+> The whole tuning is one rule: the 6540 MiB of model weights must fit in
+> VRAM together with the KV cache, which leaves about 4 GiB for it. That is
+> what decides whether you use `f16`, `q8_0` or `q4_0` at a given context.
+> On a GPU with a different VRAM budget the cache sizes stop lining up, the
+> KV cache spills into system RAM and decode collapses by 5-8x. The presets
+> will run, but not at the speeds claimed here.
+>
+> Other GPUs: use a matching engine build (CUDA / Metal) from the
+> [PrismML releases](https://github.com/PrismML-Eng/llama.cpp/releases) and
+> expect to re-derive the context table yourself.
+
 Runs [`OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF`](https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF) — a 27B ternary reasoning model in 7.2 GB — through an OpenAI-compatible server, with tested context presets from 32k up to 262k tokens.
 
 One file does everything: downloads the engine, downloads the model, starts the server.
