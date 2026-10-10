@@ -5,9 +5,15 @@ Ternary-Bonsai-2-27B-Uncensored-Heretic (PQ2_0) - portable llama.cpp server
 ------
 Двойной клик по ярлыку:
 
-    Bonsai PQ2_0 - ctx 32768.lnk      32k контекст
-    Bonsai PQ2_0 - ctx 65536.lnk      64k контекст   <- по умолчанию
-    Bonsai PQ2_0 - ctx 262144.lnk    256k контекст, KV-кэш в ОЗУ
+    Bonsai PQ2_0 - ctx 32768.lnk      32k    KV в VRAM, f16  (самый быстрый)
+    Bonsai PQ2_0 - ctx 65536.lnk      64k    KV в VRAM, f16  <- по умолчанию
+    Bonsai PQ2_0 - ctx 98304.lnk      96k    KV в ОЗУ, q8_0
+    Bonsai PQ2_0 - ctx 131072.lnk    128k    KV в ОЗУ, q8_0
+    Bonsai PQ2_0 - ctx 196608.lnk    192k    KV в ОЗУ, q8_0
+    Bonsai PQ2_0 - ctx 262144.lnk    256k    KV в ОЗУ, q8_0
+
+Все шесть проверены: стартуют и отвечают. 32k-64k работают быстрее
+всего (KV-кэш целиком в видеокарте). От 96k KV-кэш вынесен в ОЗУ.
 
 Ждать 6-20 секунд, пока в окне не появится:
     model loaded
@@ -26,15 +32,18 @@ Ternary-Bonsai-2-27B-Uncensored-Heretic (PQ2_0) - portable llama.cpp server
     start-bonsai.bat        запуск по умолчанию, CTX=65536
     run-server.bat          движок, читает настройки из переменных окружения
     ctx-32768.bat ...       по одному файлу на каждый контекст
-    serve.bat               запуск с выбором контекста аргументом
-    Bonsai PQ2_0 - ctx N.lnk ярлыки
+    Bonsai PQ2_0 - ctx N.lnk ярлыки, по одному на контекст
     prism-llama/            движок (llama.cpp форк PrismML, win-vulkan)
     Ternary-...-PQ2_0.gguf  модель, 7.2 GB
     mmproj-BF16.gguf        зрительная башня, для картинок
-    context-benchmark.csv   замеры скорости по всем контекстам
-    context-verify.csv      результаты проверки иглы в стоге сена
-    bench-context.ps1       скрипт, которым сняты замеры
     verify-context.ps1      проверка, что контекст реально работает
+    README.txt              этот файл
+    _archive/               отложенное: старые замеры и утилиты
+        context-benchmark.csv   замеры скорости по контекстам
+        context-verify.csv      результаты проверки иглы
+        bench-context.ps1       скрипт замеров
+        run-bench.bat           утилита llama-bench (не работает, -c не поддерживает)
+        serve.bat               альтернативный выбор контекста
 
 
 НАСТРОЙКИ (переменные окружения, задаются в ctx-*.bat)
@@ -47,8 +56,8 @@ Ternary-Bonsai-2-27B-Uncensored-Heretic (PQ2_0) - portable llama.cpp server
 Разово из командной строки:
     set CTX=131072
     call run-server.bat
-или
-    serve.bat 131072
+или готовый файл контекста:
+    call ctx-131072.bat
 
 Дополнительные аргументы llama-server пробрасываются как есть:
     call run-server.bat --mmproj "%~dp0mmproj-BF16.gguf"

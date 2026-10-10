@@ -9,9 +9,14 @@ if not defined PARALLEL set "PARALLEL=1"
 if not defined PORT     set "PORT=18098"
 rem -ngl 99 keeps all 65 layers in VRAM, -np 1 keeps the whole context in
 rem one slot. Both were measured: auto-fit costs 4-5x decode, 4 slots halve it.
-if not defined KVARGS (
-  if %CTX% GEQ 131072 set "KVARGS=-nkvo -ctk q8_0 -ctv q8_0"
-)
+rem KVARGS is set by the caller (ctx-*.bat). Model weights take 6540 MiB,
+rem VRAM gives about 11199 MiB free, so the KV cache must fit in ~4 GiB:
+rem   f16   32768 = 2048 MiB   65536 = 4096 MiB  (marginal, spills if busy)
+rem   q8_0  32768 = 1024 MiB   65536 = 2048 MiB   131072 = 4096 MiB
+rem   q4_0 131072 = 2048 MiB  196608 = 3264 MiB   262144 = 4352 MiB
+rem -ub 128 -b 512 shrinks the compute buffer (~390 -> ~150 MiB).
+rem Do NOT use -nkvo: KV cache in system RAM costs 8x decode.
+if not defined KVARGS set "KVARGS="
 
 set "HERE=%~dp0"
 set "MODEL=%HERE%Ternary-Bonsai-2-27B-Uncensored-Heretic-PQ2_0.gguf"
@@ -51,14 +56,7 @@ echo [INFO] API     : http://127.0.0.1:%PORT%/v1  (OpenAI compatible, localhost 
 echo [INFO] Stop    : close this window or Ctrl+C
 echo.
 
-if %CTX% GTR 65536 (
-  echo [WARNING] Context above 65536 needs the KV cache in system RAM.
-  echo [WARNING] It works, but only if the prompt grows step by step:
-  echo [WARNING] each turn should add a few thousand tokens, not hundreds
-  echo [WARNING] of thousands at once. A cold 200k prompt takes hours.
-  echo [WARNING] With prompt caching, turns are fast once the context is warm.
-  echo.
-)
+rem KV cache type is shown above; empty means f16 (default, best quality).
 
 llama-server.exe -m "%MODEL%" -ngl 99 -fa on -c %CTX% -t %THREADS% -np %PARALLEL% %KVARGS% --port %PORT% --host 127.0.0.1 %*
 
