@@ -10,7 +10,7 @@ if not defined PORT     set "PORT=18098"
 rem -ngl 99 keeps all 65 layers in VRAM, -np 1 keeps the whole context in
 rem one slot. Both were measured: auto-fit costs 4-5x decode, 4 slots halve it.
 if not defined KVARGS (
-  if %CTX% GEQ 131072 set "KVARGS=-ctk q8_0 -ctv q8_0"
+  if %CTX% GEQ 131072 set "KVARGS=-nkvo -ctk q8_0 -ctv q8_0"
 )
 
 set "HERE=%~dp0"
@@ -52,11 +52,11 @@ echo [INFO] Stop    : close this window or Ctrl+C
 echo.
 
 if %CTX% GTR 65536 (
-  echo [WARNING] Context above 65536 is unusable on this machine.
-  echo [WARNING] The KV cache stops fitting in 12 GB of VRAM and prompt
-  echo [WARNING] processing drops from 134 tok/s to under 30 tok/s.
-  echo [WARNING] Measured: 98304 and 262144 both time out on a 27k prompt.
-  echo [WARNING] Use ctx-32768.bat or ctx-65536.bat instead.
+  echo [WARNING] Context above 65536 needs the KV cache in system RAM.
+  echo [WARNING] It works, but only if the prompt grows step by step:
+  echo [WARNING] each turn should add a few thousand tokens, not hundreds
+  echo [WARNING] of thousands at once. A cold 200k prompt takes hours.
+  echo [WARNING] With prompt caching, turns are fast once the context is warm.
   echo.
 )
 
