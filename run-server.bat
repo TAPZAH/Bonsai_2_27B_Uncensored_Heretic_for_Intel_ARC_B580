@@ -51,6 +51,15 @@ echo [INFO] API     : http://127.0.0.1:%PORT%/v1  (OpenAI compatible, localhost 
 echo [INFO] Stop    : close this window or Ctrl+C
 echo.
 
+if %CTX% GTR 65536 (
+  echo [WARNING] Context above 65536 is unusable on this machine.
+  echo [WARNING] The KV cache stops fitting in 12 GB of VRAM and prompt
+  echo [WARNING] processing drops from 134 tok/s to under 30 tok/s.
+  echo [WARNING] Measured: 98304 and 262144 both time out on a 27k prompt.
+  echo [WARNING] Use ctx-32768.bat or ctx-65536.bat instead.
+  echo.
+)
+
 llama-server.exe -m "%MODEL%" -ngl 99 -fa on -c %CTX% -t %THREADS% -np %PARALLEL% %KVARGS% --port %PORT% --host 127.0.0.1 %*
 
 echo.
