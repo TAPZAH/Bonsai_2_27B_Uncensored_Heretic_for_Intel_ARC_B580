@@ -59,7 +59,7 @@ echo      5   32k  q8_0
 echo      6   65k  f16     tight VRAM
 echo      7   65k  q8_0    recommended
 echo      8   96k  q8_0    intermediate, 1 GB VRAM headroom
-echo      9   131k q8_0
+echo      9   131k q4_0
 echo      0   262k q4_0    max context, lower KV quality
 echo.
 echo   SERVER   active values
@@ -82,7 +82,7 @@ if /i "%CH%"=="5" goto :run_32k_q8_0
 if /i "%CH%"=="6" goto :run_65k_f16
 if /i "%CH%"=="7" goto :run_65k_q8_0
 if /i "%CH%"=="8" goto :run_96k_q8_0
-if /i "%CH%"=="9" goto :run_131k_q8_0
+if /i "%CH%"=="9" goto :run_131k_q4_0
 if /i "%CH%"=="0" goto :run_262k_q4_0
 if /i "%CH%"=="S" goto :settings
 if /i "%CH%"=="T" goto :test
@@ -271,8 +271,12 @@ goto :start
 :run_96k_q8_0
 set "CTX=98304"  & set "KVARGS=-ctk q8_0 -ctv q8_0"
 goto :start
-:run_131k_q8_0
-set "CTX=131072" & set "KVARGS=-ctk q8_0 -ctv q8_0 -b 512 -ub 128"
+rem 131k uses q4_0 KV on purpose. q8_0 needs 4352 MiB and then needs
+rem -ub 128 to fit, which cuts prompt eval to 120 tok/s and lost the
+rem Vulkan device on long prompts. q4_0 needs 2176 MiB, keeps the full
+rem ubatch, fits with 2 GB of headroom and runs 27 tok/s.
+:run_131k_q4_0
+set "CTX=131072" & set "KVARGS=-ctk q4_0 -ctv q4_0"
 goto :start
 :run_262k_q4_0
 set "CTX=262144" & set "KVARGS=-ctk q4_0 -ctv q4_0 -b 512 -ub 128"
@@ -285,10 +289,14 @@ if /i "%CFGNAME%"=="32k-q8_0"  ( set "CTX=32768"  & set "KVARGS=-ctk q8_0 -ctv q
 if /i "%CFGNAME%"=="65k-f16"   ( set "CTX=65536"  & set "KVARGS=" & goto :start )
 if /i "%CFGNAME%"=="65k-q8_0"  ( set "CTX=65536"  & set "KVARGS=-ctk q8_0 -ctv q8_0" & goto :start )
 if /i "%CFGNAME%"=="96k-q8_0"  ( set "CTX=98304"  & set "KVARGS=-ctk q8_0 -ctv q8_0" & goto :start )
-if /i "%CFGNAME%"=="131k-q8_0" ( set "CTX=131072" & set "KVARGS=-ctk q8_0 -ctv q8_0 -b 512 -ub 128" & goto :start )
+rem 131k-q8_0 is accepted as an alias, but it maps to the q4_0 preset:
+rem q8_0 there needs -ub 128 to fit in VRAM, which dropped prompt eval to
+rem 120 tok/s and lost the Vulkan device on long prompts.
+if /i "%CFGNAME%"=="131k-q4_0" ( set "CTX=131072" & set "KVARGS=-ctk q4_0 -ctv q4_0" & goto :start )
+if /i "%CFGNAME%"=="131k-q8_0" ( set "CTX=131072" & set "KVARGS=-ctk q4_0 -ctv q4_0" & goto :start )
 if /i "%CFGNAME%"=="262k-q4_0" ( set "CTX=262144" & set "KVARGS=-ctk q4_0 -ctv q4_0 -b 512 -ub 128" & goto :start )
 echo [ERROR] Unknown configuration "%CFGNAME%"
-echo         Use: 32k-f16 32k-q8_0 65k-f16 65k-q8_0 96k-q8_0 131k-q8_0 262k-q4_0
+echo         Use: 32k-f16 32k-q8_0 65k-f16 65k-q8_0 96k-q8_0 131k-q4_0 262k-q4_0
 pause
 goto :eof
 

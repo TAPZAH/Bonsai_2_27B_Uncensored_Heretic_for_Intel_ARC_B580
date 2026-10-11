@@ -1,6 +1,6 @@
-**English** | **[Русский](README.ru.md)**
+**English** | **[Р СѓСЃСЃРєРёР№](README.ru.md)**
 
-# Ternary Bonsai 2 27B (PQ2_0) — portable launcher
+# Ternary Bonsai 2 27B (PQ2_0) вЂ” portable launcher
 
 > **Intel Arc B580 only.**
 >
@@ -19,7 +19,7 @@
 > [PrismML releases](https://github.com/PrismML-Eng/llama.cpp/releases) and
 > expect to re-derive the context table yourself.
 
-Runs [`OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF`](https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF) — a 27B ternary reasoning model in 7.2 GB — through an OpenAI-compatible server, with tested context presets from 32k up to 262k tokens.
+Runs [`OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF`](https://huggingface.co/OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-GGUF) вЂ” a 27B ternary reasoning model in 7.2 GB вЂ” through an OpenAI-compatible server, with tested context presets from 32k up to 262k tokens.
 
 One file does everything: downloads the engine, downloads the model, starts the server.
 
@@ -33,7 +33,7 @@ The model stores its weights with **ggml type 142 (`PQ2_0`)**. Every stock llama
 gguf_init_from_reader: tensor 'output.weight' has invalid ggml type 142. should be in [0, 43)
 ```
 
-Updating LM Studio, switching runtimes, renaming the file to `Q2_0` — none of it helps. `Q2_0` will load without an error and then produce garbage, because it has no Hadamard activation runtime.
+Updating LM Studio, switching runtimes, renaming the file to `Q2_0` вЂ” none of it helps. `Q2_0` will load without an error and then produce garbage, because it has no Hadamard activation runtime.
 
 Only the **[PrismML llama.cpp fork](https://github.com/PrismML-Eng/llama.cpp)** has the ternary hybrid-attention kernels. This launcher fetches that fork for you.
 
@@ -52,7 +52,7 @@ Then choose:
 | `1` | download engine (PrismML llama.cpp fork) |
 | `2` | download model (7.2 GB, resumable) |
 | `3` | download vision tower (0.93 GB, only for image input) |
-| `4`–`9` | run a tested configuration |
+| `4`вЂ“`9` | run a tested configuration |
 | `S` | change port / threads / slots / custom context |
 | `T` | test a running server |
 
@@ -62,7 +62,7 @@ Or skip the menu entirely:
 bonsai.bat 65k-q8_0
 ```
 
-Valid names: `32k-f16`, `32k-q8_0`, `65k-f16`, `65k-q8_0`, `131k-q8_0`, `262k-q4_0`.
+Valid names: `32k-f16`, `32k-q8_0`, `65k-f16`, `65k-q8_0`, `96k-q8_0`, `131k-q4_0`, `262k-q4_0`.
 
 The API is OpenAI compatible:
 
@@ -85,10 +85,10 @@ Measured on a Ryzen 5 5500 (6C/12T) + Intel Arc B580 (12 GB VRAM), 32 GB RAM, `-
 | `65k-f16` | 65 536 | f16 | 24,4 tok/s | 415 tok/s | 10,84 GB | tight VRAM, see below |
 | `65k-q8_0` | 65 536 | q8_0 | 24,3 tok/s | 388 tok/s | 8,96 GB | **recommended** |
 | `96k-q8_0` | 98 304 | q8_0 | 24,6 tok/s | 405 tok/s | 10,06 GB | intermediate, 1,1 GB headroom |
-| `131k-q8_0` | 131 072 | q8_0 + `-b 512 -ub 128` | 24,5 tok/s | 122 tok/s | 10,03 GB | |
+| `131k-q4_0` | 131 072 | q4_0 | **27,1 tok/s** | 435 tok/s | 9,17 GB | fastest, 2 GB headroom |
 | `262k-q4_0` | 262 144 | q4_0 + `-b 512 -ub 128` | 24,3 tok/s | 219 tok/s | 10,68 GB | max context, lower KV quality |
 
-Decode speed is essentially flat across the whole range — 24 tok/s at 32k and at 262k. Only prompt eval drops at the largest context.
+Decode speed is essentially flat across the whole range вЂ” 24 tok/s at 32k and at 262k. Only prompt eval drops at the largest context.
 
 ### The rule that decides everything
 
@@ -106,12 +106,18 @@ Add 6540 + 390 to any cell and compare with 11199. That is the whole design.
 
 Two consequences worth knowing:
 
-- **131 072 with plain q8_0 does not fit**: 6540 + 4352 + 390 = 11 282 MiB, over by 83 MiB. It will load and then crash intermittently depending on how much VRAM the desktop already holds. The preset therefore passes `-b 512 -ub 128`, which shrinks the compute buffer to ~150 MiB and brings the total to 11 038 MiB with 1,17 GB to spare.
+- **131 072 needs q4_0, not q8_0.** q8_0 there is 4352 MiB, which puts
+  the total at 11 282 MiB - 83 MiB over. The obvious workaround is
+  `-b 512 -ub 128`, and it does make it fit, but ub 128 costs prompt eval:
+  it fell from 397 to 122 tok/s, and on a long prompt the rate kept sliding
+  down to 48 tok/s until the Vulkan device was lost. q4_0 needs only
+  2176 MiB, keeps the full ubatch, fits with 2 GB of headroom and ends up
+  the fastest preset of all: 27,1 tok/s decode, 435 tok/s prompt eval.
 - **`262k-q4_0` also passes `-b 512 -ub 128`** for the same reason: 6540 + 4352 + 150 = 11 042 MiB, just under the limit. f16 would need 17 GB and simply cannot run here.
 
 ### Do not use `-nkvo`
 
-Moving the KV cache to system RAM with `--no-kv-offload` costs **8x decode** (22 → 2,6 tok/s). Measured, not a guess.
+Moving the KV cache to system RAM with `--no-kv-offload` costs **8x decode** (22 в†’ 2,6 tok/s). Measured, not a guess.
 
 ### 65k f16 is the flaky one
 
@@ -126,7 +132,7 @@ It leaves only ~0,4 GB of VRAM headroom. When anything else takes VRAM, it spill
 | best quality, normal chat | `32k-f16` |
 | everyday work | `65k-q8_0` |
 | a bit more room than 65k | `96k-q8_0` |
-| long documents | `131k-q8_0` |
+| long documents | `131k-q4_0` |
 | maximum context | `262k-q4_0` |
 
 Quality trade-off: `q8_0` KV cache is a mild loss, `q4_0` is a real one. `262k-q4_0` only exists because f16 would need 16 GB of VRAM.
@@ -145,6 +151,6 @@ powershell -ExecutionPolicy Bypass -File verify-context.ps1 -TargetTokens 60000
 
 ## Notes
 
-- This is a **thinking** model. It reasons before answering, so it needs a generous token budget. With `max_tokens` of a few hundred it will spend everything on reasoning and return an empty answer. Use 8 000–16 000.
+- This is a **thinking** model. It reasons before answering, so it needs a generous token budget. With `max_tokens` of a few hundred it will spend everything on reasoning and return an empty answer. Use 8 000вЂ“16 000.
 - Engine builds target **Windows + Vulkan** (Intel Arc). CUDA and Metal builds exist in the PrismML releases; change `ENGINE_TAG` / the zip name in `bonsai.bat` if you need one.
-- The model is Apache 2.0. It is uncensored — it will answer what you ask.
+- The model is Apache 2.0. It is uncensored вЂ” it will answer what you ask.
