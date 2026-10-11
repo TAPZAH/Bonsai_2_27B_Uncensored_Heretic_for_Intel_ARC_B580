@@ -84,22 +84,30 @@ Measured on a Ryzen 5 5500 (6C/12T) + Intel Arc B580 (12 GB VRAM), 32 GB RAM, `-
 | `32k-q8_0` | 32 768 | q8_0 | 24,6 tok/s | 414 tok/s | 7,87 GB | |
 | `65k-f16` | 65 536 | f16 | 24,4 tok/s | 415 tok/s | 10,84 GB | tight VRAM, see below |
 | `65k-q8_0` | 65 536 | q8_0 | 24,3 tok/s | 388 tok/s | 8,96 GB | **recommended** |
-| `131k-q8_0` | 131 072 | q8_0 | 23,8 tok/s | 397 tok/s | 11,16 GB | |
-| `262k-q4_0` | 262 144 | q4_0 | 24,3 tok/s | 219 tok/s | 10,68 GB | max context, lower KV quality |
+| `96k-q8_0` | 98 304 | q8_0 | 24,6 tok/s | 405 tok/s | 10,06 GB | intermediate, 1,1 GB headroom |
+| `131k-q8_0` | 131 072 | q8_0 + `-b 512 -ub 128` | 24,5 tok/s | 122 tok/s | 10,03 GB | |
+| `262k-q4_0` | 262 144 | q4_0 + `-b 512 -ub 128` | 24,3 tok/s | 219 tok/s | 10,68 GB | max context, lower KV quality |
 
 Decode speed is essentially flat across the whole range — 24 tok/s at 32k and at 262k. Only prompt eval drops at the largest context.
 
 ### The rule that decides everything
 
-Model weights take **6540 MiB**. The GPU gives about **11199 MiB** free. So the KV cache must fit in the remaining ~4 GiB, or it spills to system RAM and decode collapses by 5-8x.
+Model weights take **6540 MiB** and the compute buffer about **390 MiB**. The GPU gives about **11199 MiB** free. So the KV cache must fit in the remaining ~4269 MiB, or it spills to system RAM and decode collapses by 5-8x.
 
-| KV type | 32 768 | 65 536 | 131 072 | 196 608 | 262 144 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| f16 | 2048 MiB | 4096 MiB | 8192 MiB | 12288 MiB | 16384 MiB |
-| q8_0 | 1024 MiB | 2048 MiB | 4096 MiB | 6144 MiB | 8704 MiB |
-| q4_0 | 512 MiB | 1024 MiB | 2048 MiB | 3264 MiB | 4352 MiB |
+KV cache is 16 layers x 2 (K+V) x 4 heads x 256 dim. Measured sizes:
 
-`262k-q4_0` also passes `-b 512 -ub 128`, which shrinks the compute buffer from ~390 MiB to ~150 MiB and is what makes the whole thing fit.
+| KV type | bytes/token | 32 768 | 65 536 | 98 304 | 131 072 | 196 608 | 262 144 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| f16 | 69 632 | 2176 MiB | 4352 MiB | 6528 MiB | 8704 MiB | 13056 MiB | 17408 MiB |
+| q8_0 | 34 816 | 1088 MiB | 2176 MiB | 3264 MiB | 4352 MiB | 6528 MiB | 8704 MiB |
+| q4_0 | 17 408 | 544 MiB | 1088 MiB | 1632 MiB | 2176 MiB | 3264 MiB | 4352 MiB |
+
+Add 6540 + 390 to any cell and compare with 11199. That is the whole design.
+
+Two consequences worth knowing:
+
+- **131 072 with plain q8_0 does not fit**: 6540 + 4352 + 390 = 11 282 MiB, over by 83 MiB. It will load and then crash intermittently depending on how much VRAM the desktop already holds. The preset therefore passes `-b 512 -ub 128`, which shrinks the compute buffer to ~150 MiB and brings the total to 11 038 MiB with 1,17 GB to spare.
+- **`262k-q4_0` also passes `-b 512 -ub 128`** for the same reason: 6540 + 4352 + 150 = 11 042 MiB, just under the limit. f16 would need 17 GB and simply cannot run here.
 
 ### Do not use `-nkvo`
 
@@ -117,6 +125,7 @@ It leaves only ~0,4 GB of VRAM headroom. When anything else takes VRAM, it spill
 | --- | --- |
 | best quality, normal chat | `32k-f16` |
 | everyday work | `65k-q8_0` |
+| a bit more room than 65k | `96k-q8_0` |
 | long documents | `131k-q8_0` |
 | maximum context | `262k-q4_0` |
 

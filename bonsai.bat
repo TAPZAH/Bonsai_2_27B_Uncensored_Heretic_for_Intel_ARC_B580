@@ -58,8 +58,9 @@ echo      4   32k  f16     best quality
 echo      5   32k  q8_0
 echo      6   65k  f16     tight VRAM
 echo      7   65k  q8_0    recommended
-echo      8   131k q8_0
-echo      9   262k q4_0    max context, lower KV quality
+echo      8   96k  q8_0    intermediate, 1 GB VRAM headroom
+echo      9   131k q8_0
+echo      0   262k q4_0    max context, lower KV quality
 echo.
 echo   SERVER   active values
 echo      port     = %PORT%
@@ -80,8 +81,9 @@ if /i "%CH%"=="4" goto :run_32k_f16
 if /i "%CH%"=="5" goto :run_32k_q8_0
 if /i "%CH%"=="6" goto :run_65k_f16
 if /i "%CH%"=="7" goto :run_65k_q8_0
-if /i "%CH%"=="8" goto :run_131k_q8_0
-if /i "%CH%"=="9" goto :run_262k_q4_0
+if /i "%CH%"=="8" goto :run_96k_q8_0
+if /i "%CH%"=="9" goto :run_131k_q8_0
+if /i "%CH%"=="0" goto :run_262k_q4_0
 if /i "%CH%"=="S" goto :settings
 if /i "%CH%"=="T" goto :test
 if /i "%CH%"=="Q" goto :eof
@@ -266,8 +268,11 @@ goto :start
 :run_65k_q8_0
 set "CTX=65536" & set "KVARGS=-ctk q8_0 -ctv q8_0"
 goto :start
+:run_96k_q8_0
+set "CTX=98304"  & set "KVARGS=-ctk q8_0 -ctv q8_0"
+goto :start
 :run_131k_q8_0
-set "CTX=131072" & set "KVARGS=-ctk q8_0 -ctv q8_0"
+set "CTX=131072" & set "KVARGS=-ctk q8_0 -ctv q8_0 -b 512 -ub 128"
 goto :start
 :run_262k_q4_0
 set "CTX=262144" & set "KVARGS=-ctk q4_0 -ctv q4_0 -b 512 -ub 128"
@@ -279,10 +284,11 @@ if /i "%CFGNAME%"=="32k-f16"   ( set "CTX=32768"  & set "KVARGS=" & goto :start 
 if /i "%CFGNAME%"=="32k-q8_0"  ( set "CTX=32768"  & set "KVARGS=-ctk q8_0 -ctv q8_0" & goto :start )
 if /i "%CFGNAME%"=="65k-f16"   ( set "CTX=65536"  & set "KVARGS=" & goto :start )
 if /i "%CFGNAME%"=="65k-q8_0"  ( set "CTX=65536"  & set "KVARGS=-ctk q8_0 -ctv q8_0" & goto :start )
-if /i "%CFGNAME%"=="131k-q8_0" ( set "CTX=131072" & set "KVARGS=-ctk q8_0 -ctv q8_0" & goto :start )
+if /i "%CFGNAME%"=="96k-q8_0"  ( set "CTX=98304"  & set "KVARGS=-ctk q8_0 -ctv q8_0" & goto :start )
+if /i "%CFGNAME%"=="131k-q8_0" ( set "CTX=131072" & set "KVARGS=-ctk q8_0 -ctv q8_0 -b 512 -ub 128" & goto :start )
 if /i "%CFGNAME%"=="262k-q4_0" ( set "CTX=262144" & set "KVARGS=-ctk q4_0 -ctv q4_0 -b 512 -ub 128" & goto :start )
 echo [ERROR] Unknown configuration "%CFGNAME%"
-echo         Use: 32k-f16 32k-q8_0 65k-f16 65k-q8_0 131k-q8_0 262k-q4_0
+echo         Use: 32k-f16 32k-q8_0 65k-f16 65k-q8_0 96k-q8_0 131k-q8_0 262k-q4_0
 pause
 goto :eof
 
